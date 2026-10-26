@@ -67,3 +67,14 @@ export function roundTicks(max: number, step: number): number[] {
   const top = Math.max(step, Math.ceil(max / step) * step);
   return Array.from({ length: top / step + 1 }, (_, i) => i * step);
 }
+
+/** "2026-01-27" -> "Tue 27 Jan" (a plain calendar date, no time zone shift). */
+export function formatLongDay(isoDate: string): string {
+  const [y, m, d] = isoDate.split("-").map(Number);
+  return new Intl.DateTimeFormat("en-GB", {
+    weekday: "short",
+    day: "numeric",
+    month: "short",
+    timeZone: "UTC",
+  }).format(new Date(Date.UTC(y, m - 1, d)));
+}

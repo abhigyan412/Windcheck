@@ -1,4 +1,4 @@
-# Wind Forecast Monitor
+# Windcheck — Day-ahead wind forecast monitor
 
 A decision tool for a GB energy utility's day-ahead trading team. It answers one question:
 

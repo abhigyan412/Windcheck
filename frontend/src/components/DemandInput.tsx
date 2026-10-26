@@ -1,4 +1,5 @@
-import { useEffect, useState } from "react";
+import { Upload } from "lucide-react";
+import { useEffect, useRef, useState } from "react";
 import type { Demand } from "../types";
 import { Segmented } from "./common";
 
@@ -30,6 +31,7 @@ export function DemandInput({ hours, onChange }: Props) {
   const [mode, setMode] = useState<InputMode>("flat");
   const [flat, setFlat] = useState("30000");
   const [pasted, setPasted] = useState(EXAMPLE_TEXT);
+  const fileRef = useRef<HTMLInputElement>(null);
 
   const values = parseValues(pasted);
   const flatValue = Number(flat);
@@ -65,20 +67,20 @@ export function DemandInput({ hours, onChange }: Props) {
       )
       .filter((v): v is number => v !== undefined);
     const perHour = nums.length > hours ? nums.slice(-hours) : nums;
-    setPasted(perHour.join("\n"));
+    setPasted(perHour.join(", "));
     setMode("paste");
   }
 
   return (
-    <div className="controls" style={{ alignItems: "flex-start" }}>
+    <div className="toolbar" style={{ boxShadow: "none" }}>
       <div className="field">
-        Your demand
+        Your customers&apos; demand
         <Segmented
           label="Demand input"
           value={mode}
           onChange={setMode}
           options={[
-            { value: "flat", label: "Flat value" },
+            { value: "flat", label: "Same every hour" },
             { value: "paste", label: "Hour by hour" },
             { value: "none", label: "No demand" },
           ]}
@@ -88,44 +90,58 @@ export function DemandInput({ hours, onChange }: Props) {
         <label className="field">
           MW every hour
           <input
+            className="input num"
             type="number"
             min={0}
             step={500}
             value={flat}
             onChange={(e) => setFlat(e.target.value)}
-            style={{ width: 140 }}
+            style={{ width: 150 }}
           />
         </label>
       )}
       {mode === "paste" && (
-        <label className="field" style={{ flex: "1 1 260px" }}>
+        <label className="field" style={{ flex: "1 1 320px" }}>
           <span>
-            Your customers&apos; demand for each hour, 00:00 → 23:00 ({hours} numbers in MW, comma
-            or newline separated) ·{" "}
+            MW for each hour, 00:00 → 23:00 ·{" "}
             <strong>
               {values.length}/{hours}
-            </strong>
+            </strong>{" "}
+            <span className="hint">
+              (example winter day pre-filled; paste your own)
+              {pasted !== EXAMPLE_TEXT && (
+                <>
+                  {" · "}
+                  <button type="button" className="link" onClick={() => setPasted(EXAMPLE_TEXT)}>
+                    Reset to example
+                  </button>
+                </>
+              )}
+            </span>
           </span>
-          <textarea rows={3} value={pasted} onChange={(e) => setPasted(e.target.value)} />
-          <span style={{ color: "var(--muted)" }}>
-            Pre-filled with an example winter day (low overnight, evening peak). Replace it with
-            your own forecast.{" "}
-            {pasted !== EXAMPLE_TEXT && (
-              <button type="button" className="link" onClick={() => setPasted(EXAMPLE_TEXT)}>
-                Reset to example
-              </button>
-            )}
-          </span>
+          <textarea
+            className="input"
+            rows={2}
+            value={pasted}
+            onChange={(e) => setPasted(e.target.value)}
+          />
         </label>
       )}
-      <label className="field">
-        or upload CSV
-        <input
-          type="file"
-          accept=".csv,text/csv,text/plain"
-          onChange={(e) => e.target.files?.[0] && onFile(e.target.files[0])}
-        />
-      </label>
+      {mode !== "none" && (
+        <div className="field">
+          <span>&nbsp;</span>
+          <button type="button" className="btn" onClick={() => fileRef.current?.click()}>
+            <Upload size={15} /> Upload CSV
+          </button>
+          <input
+            ref={fileRef}
+            type="file"
+            hidden
+            accept=".csv,text/csv,text/plain"
+            onChange={(e) => e.target.files?.[0] && onFile(e.target.files[0])}
+          />
+        </div>
+      )}
       {error && (
         <div className="inline-error" style={{ flexBasis: "100%" }}>
           {error}

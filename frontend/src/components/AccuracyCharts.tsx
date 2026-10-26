@@ -12,11 +12,22 @@ import {
   YAxis,
 } from "recharts";
 import type { TooltipProps } from "recharts";
-import { formatMW, roundTicks } from "../format";
+import { formatGW, roundTicks } from "../format";
 import type { HistogramBin, HorizonRow, LevelRow } from "../types";
 
-const axis = { stroke: "var(--axis)", tick: { fill: "var(--muted)", fontSize: 12 } };
-const gwTick = (v: number) => `${v / 1000}`;
+const xAxis = {
+  stroke: "var(--axis)",
+  tickLine: false,
+  tick: { fill: "var(--muted)", fontSize: 12 },
+} as const;
+const yAxis = {
+  axisLine: false,
+  tickLine: false,
+  tick: { fill: "var(--muted)", fontSize: 12 },
+  width: 52,
+} as const;
+const gwTick = (v: number) => `${v / 1000} GW`;
+const cursorFill = { fill: "var(--surface-2)" };
 
 function Tip({ title, rows }: { title: string; rows: [string, string][] }) {
   return (
@@ -38,56 +49,64 @@ export function HorizonChart({ rows, current }: { rows: HorizonRow[]; current: n
     const r = payload[0].payload as HorizonRow;
     return (
       <Tip
-        title={`${r.horizon} h ahead`}
+        title={`Forecast made ${r.horizon} h ahead`}
         rows={[
-          ["Bias (avg too high)", formatMW(r.bias, true)],
-          ["Spread (P90 − P10)", formatMW(r.spread)],
-          ["Typical miss (MAE)", formatMW(r.mae)],
+          ["Too high on average", formatGW(r.bias)],
+          ["Uncertainty (P90 − P10)", formatGW(r.spread)],
+          ["Typical miss", formatGW(r.mae)],
         ]}
       />
     );
   };
+  const ticks = roundTicks(Math.max(0, ...rows.map((r) => r.spread ?? 0)), 2000);
   return (
     <>
       <div className="legend">
         <span>
-          <i className="swatch" style={{ background: "var(--forecast)" }} /> Bias: fixed
-          over-forecast
+          <i className="swatch" style={{ background: "var(--forecast)" }} /> Too high on average
+          (bias)
         </span>
         <span>
-          <i className="swatch" style={{ background: "var(--actual)" }} /> Spread: uncertainty (P90
-          − P10)
+          <i className="swatch" style={{ background: "var(--actual)" }} /> Uncertainty (spread)
         </span>
       </div>
-      <ResponsiveContainer width="100%" height={240}>
-        <LineChart data={rows} margin={{ top: 8, right: 12, bottom: 12, left: 8 }}>
+      <ResponsiveContainer width="100%" height={250}>
+        <LineChart data={rows} margin={{ top: 8, right: 12, bottom: 14, left: 0 }}>
           <CartesianGrid stroke="var(--grid)" vertical={false} />
           <XAxis
             dataKey="horizon"
-            {...axis}
+            {...xAxis}
+            ticks={[1, 6, 12, 18, 24, 30, 36, 42, 48]}
             label={{
-              value: "hours ahead",
+              value: "hours before delivery the forecast was made",
               position: "insideBottom",
-              offset: -6,
+              offset: -8,
               fill: "var(--muted)",
               fontSize: 12,
             }}
           />
-          <YAxis tickFormatter={gwTick} {...axis} width={40} domain={[0, "auto"]} />
-          <Tooltip content={tip} />
+          <YAxis
+            tickFormatter={gwTick}
+            ticks={ticks}
+            domain={[0, ticks[ticks.length - 1]]}
+            {...yAxis}
+          />
+          <Tooltip content={tip} cursor={{ stroke: "var(--border-strong)" }} />
           <ReferenceLine x={current} stroke="var(--muted)" strokeDasharray="3 3" />
           <Line
             dataKey="bias"
             stroke="var(--forecast)"
-            strokeWidth={2}
+            strokeWidth={2.25}
             dot={false}
+            activeDot={{ r: 4, stroke: "var(--surface)", strokeWidth: 2 }}
             isAnimationActive={false}
           />
           <Line
             dataKey="spread"
             stroke="var(--actual)"
-            strokeWidth={2}
+            strokeWidth={2.25}
             dot={false}
+            activeDot={{ r: 4, stroke: "var(--surface)", strokeWidth: 2 }}
             isAnimationActive={false}
           />
         </LineChart>
@@ -102,47 +121,40 @@ export function LevelChart({ rows }: { rows: LevelRow[] }) {
     const r = payload[0].payload as LevelRow;
     return (
       <Tip
-        title={`Forecast ${r.bucket}`}
+        title={`Forecast said ${r.bucket}`}
         rows={[
-          ["Avg too high", formatMW(r.bias, true)],
-          ["Hours", String(r.count)],
+          ["Too high on average", formatGW(r.bias)],
+          ["Hours in this group", String(r.count)],
         ]}
       />
     );
   };
   const ticks = roundTicks(Math.max(0, ...rows.map((r) => r.bias ?? 0)), 1000);
   return (
-    <ResponsiveContainer width="100%" height={262}>
-      <BarChart data={rows} margin={{ top: 20, right: 8, bottom: 0, left: 8 }}>
+    <ResponsiveContainer width="100%" height={276}>
+      <BarChart data={rows} margin={{ top: 22, right: 8, bottom: 0, left: 0 }}>
         <CartesianGrid stroke="var(--grid)" vertical={false} />
-        <XAxis dataKey="bucket" {...axis} />
+        <XAxis dataKey="bucket" {...xAxis} tickFormatter={(b: string) => `forecast ${b}`} />
         <YAxis
           tickFormatter={gwTick}
           ticks={ticks}
           domain={[0, ticks[ticks.length - 1]]}
-          {...axis}
-          width={40}
-          label={{
-            value: "GW",
-            angle: -90,
-            position: "insideLeft",
-            fill: "var(--muted)",
-            fontSize: 12,
-          }}
+          {...yAxis}
         />
-        <Tooltip content={tip} cursor={{ fill: "var(--surface-2)" }} />
+        <Tooltip content={tip} cursor={cursorFill} />
         <Bar
           dataKey="bias"
           fill="var(--forecast)"
-          radius={[4, 4, 0, 0]}
-          maxBarSize={56}
+          radius={[6, 6, 0, 0]}
+          maxBarSize={64}
           isAnimationActive={false}
           label={{
             position: "top",
             fill: "var(--text-2)",
             fontSize: 12,
-            // Unit lives on the axis; a unit here wraps onto a second line.
-            formatter: (v: number) => `${v > 0 ? "+" : ""}${(v / 1000).toFixed(1)}`,
+            fontWeight: 600,
+            // No unit here: a unit makes Recharts wrap the label onto two lines.
+            formatter: (v: number) => `+${(v / 1000).toFixed(1)}`,
           }}
         />
       </BarChart>
@@ -150,16 +162,28 @@ export function LevelChart({ rows }: { rows: LevelRow[] }) {
   );
 }
 
+const gw = (mw: number) => `${Math.abs(mw) / 1000}`;
+
+/** "1 to 1.5" style range label for a histogram bin, in GW. */
+function binLabel(b: HistogramBin): string {
+  return `${b.from < 0 ? "−" : ""}${gw(b.from)}–${b.to < 0 ? "−" : ""}${gw(b.to)}`;
+}
+
 export function ErrorDistribution({ bins }: { bins: HistogramBin[] }) {
-  const rows = bins.map((b) => ({ ...b, mid: (b.from + b.to) / 2, short: b.from >= 0 }));
+  const total = bins.reduce((s, b) => s + b.count, 0) || 1;
+  const rows = bins.map((b) => ({ ...b, label: binLabel(b), short: b.from >= 0 }));
   const tip = ({ active, payload }: TooltipProps<number, string>) => {
     if (!active || !payload?.length) return null;
     const r = payload[0].payload as (typeof rows)[number];
+    const what = r.short
+      ? `${gw(r.from)}–${gw(r.to)} GW less wind than forecast`
+      : `${gw(r.to)}–${gw(r.from)} GW more wind than forecast`;
     return (
       <Tip
-        title={`${formatMW(r.from, true)} to ${formatMW(r.to, true)}`}
+        title={what}
         rows={[
-          [r.short ? "Forecast too high (short)" : "Forecast too low (spare)", `${r.count} hours`],
+          ["Hours", String(r.count)],
+          ["Share of hours", `${((r.count / total) * 100).toFixed(0)}%`],
         ]}
       />
     );
@@ -168,32 +192,33 @@ export function ErrorDistribution({ bins }: { bins: HistogramBin[] }) {
     <>
       <div className="legend">
         <span>
-          <i className="swatch band" style={{ background: "var(--critical)", opacity: 1 }} />{" "}
-          Forecast too high → you are short
+          <i className="swatch block" style={{ background: "var(--critical)" }} /> Less wind than
+          forecast → you&apos;d be short
         </span>
         <span>
-          <i className="swatch band" style={{ background: "var(--neutral-bar)", opacity: 1 }} />{" "}
-          Forecast too low → spare wind
+          <i className="swatch block" style={{ background: "var(--neutral-bar)" }} /> More wind than
+          forecast → spare power
         </span>
       </div>
-      <ResponsiveContainer width="100%" height={220}>
-        <BarChart data={rows} barCategoryGap={2} margin={{ top: 8, right: 8, bottom: 12, left: 8 }}>
+      <ResponsiveContainer width="100%" height={240}>
+        <BarChart data={rows} barCategoryGap={3} margin={{ top: 8, right: 8, bottom: 14, left: 0 }}>
           <CartesianGrid stroke="var(--grid)" vertical={false} />
           <XAxis
-            dataKey="mid"
-            tickFormatter={(v: number) => `${v > 0 ? "+" : ""}${v / 1000}`}
-            {...axis}
+            dataKey="label"
+            {...xAxis}
+            interval="preserveStartEnd"
+            minTickGap={10}
             label={{
-              value: "forecast − actual (GW)",
+              value: "forecast − actual (GW): right of 0 = less wind than forecast",
               position: "insideBottom",
-              offset: -6,
+              offset: -8,
               fill: "var(--muted)",
               fontSize: 12,
             }}
           />
-          <YAxis {...axis} width={40} allowDecimals={false} />
-          <Tooltip content={tip} cursor={{ fill: "var(--surface-2)" }} />
-          <Bar dataKey="count" radius={[4, 4, 0, 0]} isAnimationActive={false}>
+          <YAxis {...yAxis} allowDecimals={false} tickFormatter={(v: number) => `${v} h`} />
+          <Tooltip content={tip} cursor={cursorFill} />
+          <Bar dataKey="count" radius={[5, 5, 0, 0]} isAnimationActive={false}>
             {rows.map((r) => (
               <Cell key={r.from} fill={r.short ? "var(--critical)" : "var(--neutral-bar)"} />
             ))}
