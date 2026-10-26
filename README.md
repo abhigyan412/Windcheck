@@ -6,7 +6,7 @@ A decision tool for a GB energy utility's day-ahead trading team. It answers one
 
 It compares Elexon's national wind forecasts (WINDFOR) with actual wind generation (FUELHH) for decisions made in **January 2026**, measures how wrong the forecasts are, and turns that error into a **safe-wind** figure and an hour-by-hour **buying sheet**.
 
-- **Live app:** _TODO: add Vercel URL_
+- **Live app:** https://windcheck-chi.vercel.app
 - **Video walkthrough:** _TODO: add unlisted YouTube URL_
 
 ---
