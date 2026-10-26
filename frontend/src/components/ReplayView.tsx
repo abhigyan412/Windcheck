@@ -14,6 +14,7 @@ export function ReplayView({ range }: { range: RangeInfo }) {
   const [confidence, setConfidence] = useState(0.9);
   const [revealed, setRevealed] = useState(false);
   const [demand, setDemand] = useState<Demand>(null);
+  const [demandPending, setDemandPending] = useState(false);
 
   const replay = useApi(() => api.replay(day, decision, confidence), [day, decision, confidence]);
   const req: BuyingSheetRequest = {
@@ -133,8 +134,21 @@ export function ReplayView({ range }: { range: RangeInfo }) {
         title="Buying sheet"
         sub="Hour by hour: how much wind to count on and how much power to buy. To buy = demand − safe wind."
       >
-        <DemandInput hours={r?.points.length ?? 24} onChange={setDemand} />
+        <DemandInput
+          hours={r?.points.length ?? 24}
+          onChange={(d, pending) => {
+            setDemand(d);
+            setDemandPending(pending);
+          }}
+        />
         <div style={{ height: 12 }} />
+        {demandPending && (
+          <p className="pending-note">
+            Enter all {r?.points.length ?? 24} hourly demand values to see the{" "}
+            <strong>Demand</strong> and <strong>To buy</strong> columns. Until then the sheet shows
+            only how much wind to count on.
+          </p>
+        )}
         {sheet.error && <ErrorBanner message={sheet.error} />}
         {sheet.data ? (
           <BuyingSheet sheet={sheet.data} request={req} showActual={revealed} />
