@@ -8,13 +8,13 @@ from app.config import DATA_DIR
 @lru_cache(maxsize=1)
 def load_actuals() -> pd.DataFrame:
     """Half-hourly wind actuals: columns startTime (UTC), generation (MW)."""
-    return pd.read_parquet(DATA_DIR / "actuals.parquet")
+    return pd.read_csv(DATA_DIR / "actuals.csv.gz", parse_dates=["startTime"])
 
 
 @lru_cache(maxsize=1)
 def load_forecasts() -> pd.DataFrame:
     """Wind forecasts: columns publishTime (UTC), startTime (UTC), generation (MW)."""
-    return pd.read_parquet(DATA_DIR / "forecasts.parquet")
+    return pd.read_csv(DATA_DIR / "forecasts.csv.gz", parse_dates=["publishTime", "startTime"])
 
 
 def hourly_actuals(actuals: pd.DataFrame) -> pd.DataFrame:

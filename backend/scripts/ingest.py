@@ -1,4 +1,4 @@
-"""Fetch January 2026 wind actuals (FUELHH) and forecasts (WINDFOR) from Elexon into Parquet.
+"""Fetch January 2026 wind actuals (FUELHH) and forecasts (WINDFOR) from Elexon into gzipped CSV.
 
 Usage (from repo root or backend/):
     python backend/scripts/ingest.py
@@ -104,8 +104,8 @@ def main() -> None:
     with httpx.Client(timeout=TIMEOUT_S) as client:
         actuals = fetch_actuals(client)
         forecasts = fetch_forecasts(client)
-    actuals.to_parquet(DATA_DIR / "actuals.parquet", index=False)
-    forecasts.to_parquet(DATA_DIR / "forecasts.parquet", index=False)
+    actuals.to_csv(DATA_DIR / "actuals.csv.gz", index=False)
+    forecasts.to_csv(DATA_DIR / "forecasts.csv.gz", index=False)
     summarise(actuals, forecasts)
 
 

@@ -1,0 +1,5 @@
+# Used by Vercel's Python runtime for api/index.py. Keep in sync with backend/requirements.txt.
+fastapi==0.115.6
+pandas==2.2.3
+pydantic==2.10.3
+tzdata==2024.2
