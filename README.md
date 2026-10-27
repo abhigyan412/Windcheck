@@ -146,5 +146,4 @@ python backend/scripts/ingest.py
 - Formatting and lint: black + ruff, eslint + prettier.
 - Chart colours are checked for colour-blind safety; every series has a legend and the buying sheet is a table view of the same data.
 
-## AI tools used
-This project was built with the help of **Claude Code** (Anthropic), which was used for planning, data exploration, writing code and tests, and drafting documentation. All design decisions, analysis results and code were reviewed, run and tested locally.
+
